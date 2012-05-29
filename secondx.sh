@@ -27,10 +27,16 @@ tmp_script()
 run_twm()
 {
 	twm=`which twm`
-	runscript=`tmp_script "$twm &" "xterm"`
+	app="xterm"
+
+	if [ -n "$1" ]; then
+		app="$1"
+	fi
+
+	runscript=`tmp_script "$twm &" "$app"`
 
 	xinit $runscript -- $XOPTS
 }
 
 #startx -- $XOPTS
-run_twm
+run_twm "$@"
