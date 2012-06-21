@@ -1,0 +1,68 @@
+#! /bin/bash
+
+# Provides a uniform way to change the default GCC toolchain
+# to another one. Create to work on Arch Linux distro.
+
+prefix="x86_64-unknown-linux-gnu"
+bins="gcc g++ c++"
+ver=""
+dryrun="1"
+target="/usr/bin"
+dir="/usr/bin"
+
+OPT_FORMAT="p:v:b:t:d:fh"
+
+while getopts $OPT_FORMAT opt; do
+	case $opt in
+	h)
+		echo "Usage: $0 [-p <prefix>] [-v <version>] [-b <binaries>] [-d <dir>] [-n]" > /dev/stderr
+		echo "  -p <prefix>   Which toolchain to link to be default" > /dev/stderr
+		echo "  -v <version>  Which version to link to be default" > /dev/stderr
+		echo "  -b <binaries> List of binaries to relink (default: 'gcc g++ c++')" > /dev/stderr
+		echo "  -t <dir>      Where (target) to do the relink (default: /usr/bin)" > /dev/stderr
+		echo "  -d <dir>      Where is located the toolchain (default: /usr/bin)" > /dev/stderr
+		echo "  -f            Force to do it, otherwise only dry-run is performed" > /dev/stderr
+		exit 0
+	;;
+
+	f)
+		dryrun=""
+	;;
+
+	p)
+		prefix="$OPTARG"
+	;;
+
+	v)
+		ver="$OPTARG"
+	;;
+
+	b)
+		bins="$OPTARG"
+	;;
+
+	t)
+		target="$OPTARG"
+	;;
+
+	d)
+		dir="$OPTARG"
+	;;
+	esac
+done
+
+echo "Relinking $dir/$prefix-{$bins}-$ver to $target/{$bins}" > /dev/stderr
+
+for bin in $bins; do
+	from="$dir/$prefix-$bin-$ver"
+	to="$target/$bin"
+
+	rm_cmd="rm -f $to"
+	ln_cmd="ln -v -s $from $to"
+
+	if [ "$dryrun" = "1" ]; then
+		echo "(dry run)" $rm_cmd "&&" $ln_cmd
+	else
+		$rm_cmd && $ln_cmd
+	fi
+done
