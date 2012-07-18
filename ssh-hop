@@ -1,0 +1,18 @@
+#! /bin/sh
+
+# Provides an easy way to ssh to a remote computer that is not
+# available directly on local network, but needs to be connected
+# using a number of hops.
+#
+# Usage: ssh-hop public.example.org tunnel1.example.org 192.168.1.0 target.example.org
+# * opens a tunnel over public.example.org, tunnel1.example.org and 192.168.1.0 to
+#   finally connect the requested server target.example.org.
+
+hops=""
+
+while [ -n "$1" ]; do
+	hops="$hops ssh -At $1"
+	shift
+done
+
+$hops
