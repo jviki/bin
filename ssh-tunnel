@@ -1,0 +1,105 @@
+#! /bin/sh
+
+# Provides an easy (more verbose) way to use ssh tunneling.
+#
+# Usage: ssh-tunnel local 9001 over tunnel1.example.org to target.example.org
+
+die()
+{
+	echo "[ERROR] $@" > /dev/stderr
+	exit 1
+}
+
+warn()
+{
+	echo "[WARN]  $@" > /dev/stderr
+}
+
+match_regx()
+{
+	echo "$2" | grep "$1"
+}
+
+sanitize_missing_port()
+{
+	if [ `match_regx "^..*:[0-9][0-9]*$" "$1"` ]; then
+		echo "$1"
+	elif [ `match_regx "^[0-9][0-9]*$" "$1"` ]; then
+		die "Only port was specified for $2? ($1)"
+	else
+		warn "Using default port 22 for $2 ($1:22)"
+		echo "$1:22"
+	fi
+}
+
+assert_has_port()
+{
+	test `match_regx "[0-9][0-9]*$" "$1"` || die "Missing a port for $2 ($1)"
+}
+
+while [ -n "$1" ]; do
+	case $1 in
+	-h | --help)
+		echo "Usage: ssh-tunnel [options] [commands]"
+		echo ""
+		echo "Commands:"
+		echo "  local [host:]port"
+		echo "  over  host[:port]"
+		echo "  to    host[:port]"
+		echo "  arg   <ssh-argument>"
+		echo "  gobg"
+		echo ""
+		echo "Options:"
+		echo "  --help, -h  help"
+		echo "  -n          dry dun (debugging)"
+		exit 0
+	;;
+
+	-n | --dry-run)
+		dry_run="echo "
+	;;
+
+	gobg)
+		gobg="-f"
+	;;
+
+	over)
+		test -z "$2" && die "Missing host[:port] for 'over'"
+		tunnel_host="$2"
+
+		shift
+	;;
+
+	to)
+		test -z "$2" && die "Missing host[:port] for 'to'"
+		remote_host="$2"
+
+		shift
+	;;
+
+	local)
+		test -z "$2" && die "Missing [host:]port for 'local'"
+		local_host="$2"
+
+		shift
+	;;
+
+	arg)
+		test -n "$ssh_args" && ssh_args="$ssh_args $2"
+		test -z "$ssh_args" && ssh_args="$2"
+
+		shift
+	;;
+	esac
+
+	shift
+done
+
+test -z "$tunnel_host" && die "Which host to tunnel over? (specify 'over')"
+test -z "$remote_host" && die "Which host to tunnel to? (specify 'to')"
+test -z "$local_host"  && die "Where to bind the tunnel? (specify 'local')"
+
+remote_host=`sanitize_missing_port "$remote_host" "to"`
+assert_has_port "$local_host"  "local"
+
+$dry_run ssh $ssh_args $gobg -L$local_host:$remote_host "$tunnel_host" "$@"
