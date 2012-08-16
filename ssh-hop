@@ -4,14 +4,23 @@
 # available directly on local network, but needs to be connected
 # using a number of hops.
 #
-# Usage: ssh-hop public.example.org tunnel1.example.org 192.168.1.0 target.example.org
+# Usage: ssh-hop -X public.example.org tunnel1.example.org 192.168.1.0 target.example.org
 # * opens a tunnel over public.example.org, tunnel1.example.org and 192.168.1.0 to
 #   finally connect the requested server target.example.org.
+# * the tunnel is capable of tunneling the X Window protocol
+
+OPT_FORMAT="X"
+
+while getopts $OPT_FORMAT opt; do
+	test "$opt" = "?" && exit 1
+	test -z "$args" && args="-$opt" || args="$args -$opt"
+	shift
+done
 
 hops=""
 
 while [ -n "$1" ]; do
-	hops="$hops ssh -At $1"
+	hops="$hops ssh -At $args $1"
 	shift
 done
 
